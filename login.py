@@ -1,99 +1,56 @@
 import pandas as pd 
-import getpass
+import hashlib as hash
 
-def read_login():
-      with open('login.txt','r') as f:
-            contents = f.readlines()
-            new_content = []
+class LoginCreate():
+    def __init__(self, filename, data, fields):
+        self.filename = filename
+        self.data = data
+        self.fields = fields
 
-            for line in contents:
-                  flied =line.split(',')
-                  flied[1] = flied[1].rstrip()
-                  new_content.append(flied)
+    def choices_function(self):
+        choices = int(input("Do You Want to \n 1. Log-in \n 2. Create Account"))
+        if choices == 1:
+            id_to_transfer = self.login()
+        elif choices == 2:
+            id_to_transfer = self.create()
+        else:
+            print("You Have Entered Wrong choices ")
+            id_to_transfer = None
+        return id_to_transfer
 
-      return new_content
-      
+    def login(self):
+        id_ = int(input("Enter Your Id:\t"))
+        password = str(input("Enter Your Password:\t"))
+        password_hash = hash.sha256(password.encode()).hexdigest()
+        index = self.data.index[self.data["Id"] == id_].tolist()
+        if index:
+            if password_hash == self.data.at[index[0],'Password']:
+                print("Login Successfully")
+                return id_
+        print("ID Entered is Invalid ")
+        return self.choices_function()
 
-def logins(login):
-      for i in range(0,3):
-            User_Name = str(input("Enter User Name\t:\t"))
-            Password = getpass.getpass("Enter password\t:\t ")
-            # Password_hash = str(hash(Password))
-            logged_in = False
-            for line in login:
-                  if line[0] == User_Name and not logged_in:
-                        if line[1] == Password:
-                              logged_in = True
-                              return logged_in
-            
-            chocies_2 = int(input(("Account Not Found \n 1. Create a Account \n 2. Try to login again")))
-            if chocies_2 == 1:
-                  create(login)
-            elif chocies_2 == 2:
-                  logins(login) 
-            else:
-                  raise Exception("Error invalid input")
+    def create(self):
+        new_entry = {}
+        New_Id = self.id_generator()
+        new_entry["Id"] = New_Id
+        password_create = str(input("Create A Password: "))
+        password_hash_create = hash.sha256(password_create.encode()).hexdigest()
+        new_entry["Password"] = password_hash_create
+        print(f"Id of This Person Will be {new_entry['Id']}")
+        index = self.data.index[self.data["Id"] == New_Id].tolist()[0]
 
-                  
+        for field in self.fields:
+            self.data.loc[index,field] = input(f"Enter {field}: ")
+        self.data.to_csv(self.filename, index=False)
+        print("New entry added successfully.")
+        print("\n\n Now Login To Continue Further...")
+        return self.login()
 
-
-
-
-
-
-def create(login):
-      status_create = False 
-      User_Name = str(input("Enter User Name\t:\t"))
-      Password = getpass.getpass("Enter password\t:\t ")
-      Comf_Pass= getpass.getpass("Comform password\t:\t ")
-      
-      for i in range(0,3):
-            if Comf_Pass == Password:
-                  New_user = [User_Name,Password]
-                  login.append(New_user)
-                  status_create = True
-                  break
-            else:
-                  print("Password and Commform Pass has no match Please correct it ")
-      if status_create:
-            print("Login to Continue futher")
-            logins(login)
-      else:
-             pass
-
-
-
-
-
-
-def chocies():
-            login_status = False
-            login = read_login()
-            choice = int(input("1.Login\n2.Create Account"))
-
-            if choice == 1:
-                  login_status = logins(login)
-                  if login_status : return login_status
-                  else:
-                        print("Account Not Found Create A Account OR Try Again")
-                        create
-            
-            elif choice == 2:
-                  create_status = create(login)
-                  if create_status:
-                        print("Login to Proceed Futher")
-                        login_status = logins(login)
-                        return login_status
-                        
-            else:
-                  raise Exception("Enter OPtion is invalid")
-
-
-
-
-login = read_login()
-chocies()
-
-
- 
-
+    def id_generator(self):
+        num = len(self.data) + 2
+        if self.filename == 'Doctor.csv':
+            id_ = 61230000 + num
+        else:
+            id_ = 21300000  + num
+        return id_
